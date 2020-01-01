@@ -31,6 +31,7 @@ func (l *ListElement) Range(start, stop int, fn func(i int, value []byte, quit *
 		return errors.New("bad start/stop index")
 	}
 
+	//调用range函数
 	min := l.indexKey(l.leftIndex() + int64(start))
 	max := []byte{MAXBYTE} // use rightIndex is better
 	prefix := l.keyPrefix()
@@ -48,6 +49,7 @@ func (l *ListElement) Range(start, stop int, fn func(i int, value []byte, quit *
 	return nil
 }
 
+//获取数据
 func (l *ListElement) Index(i int64) ([]byte, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -57,6 +59,7 @@ func (l *ListElement) Index(i int64) ([]byte, error) {
 	return l.db.RawGet(idxkey)
 }
 
+//批量push数据
 func (l *ListElement) RPush(vals ...[]byte) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -69,13 +72,13 @@ func (l *ListElement) RPush(vals ...[]byte) error {
 		// empty
 		batch.Put(l.rawKey(), nil)
 	}
-
+	//放入index和值
 	for i, val := range vals {
 		batch.Put(l.indexKey(y+int64(i)+1), val)
 	}
 	return l.db.WriteBatch(batch)
 }
-
+//左边push
 func (l *ListElement) LPush(vals ...[]byte) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -126,9 +129,11 @@ func (l *ListElement) pop(left bool) ([]byte, error) {
 		return nil, err
 	}
 
+	//返回和删除
 	if size > 1 {
 		return val, l.db.RawDelete(idxkey)
 	} else if size == 1 {
+		//删除和返回数据
 		batch := gorocksdb.NewWriteBatch()
 		defer batch.Destroy()
 		batch.Delete(l.rawKey())
@@ -139,6 +144,7 @@ func (l *ListElement) pop(left bool) ([]byte, error) {
 	}
 }
 
+//删除数据
 func (l *ListElement) drop() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -157,18 +163,19 @@ func (l *ListElement) drop() error {
 	}
 	return err
 }
-
+//长度
 func (l *ListElement) Len() int64 {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.len()
 }
 
+//左边和右边的长度
 func (l *ListElement) len() int64 {
 	x, y := l.leftIndex(), l.rightIndex()
 	return y - x + 1
 }
-
+//找到左边的key
 func (l *ListElement) leftIndex() int64 {
 	idx := int64(0) // default 0
 	l.db.PrefixEnumerate(l.keyPrefix(), IterForward, func(i int, key, value []byte, quit *bool) {
@@ -178,6 +185,7 @@ func (l *ListElement) leftIndex() int64 {
 	return idx
 }
 
+//找到右边dkey
 func (l *ListElement) rightIndex() int64 {
 	idx := int64(-1) // default -1
 	l.db.PrefixEnumerate(l.keyPrefix(), IterBackward, func(i int, key, value []byte, quit *bool) {
@@ -187,16 +195,19 @@ func (l *ListElement) rightIndex() int64 {
 	return idx
 }
 
+//key的设置
 // +key,l = ""
 func (l *ListElement) rawKey() []byte {
 	return rawKey(l.key, LIST)
 }
 
+//前缀
 // l[key]
 func (l *ListElement) keyPrefix() []byte {
 	return bytes.Join([][]byte{[]byte{LIST}, SOK, l.key, EOK}, nil)
 }
 
+//根据i获取名字
 // l[key]0 = "a"
 func (l *ListElement) indexKey(i int64) []byte {
 	sign := []byte{0}
@@ -206,6 +217,7 @@ func (l *ListElement) indexKey(i int64) []byte {
 	return bytes.Join([][]byte{l.keyPrefix(), sign, Int64ToBytes(i)}, nil)
 }
 
+//获得索引
 // split l[key]index into index
 func (l *ListElement) indexInKey(key []byte) int64 {
 	idxbuf := bytes.TrimPrefix(key, l.keyPrefix())

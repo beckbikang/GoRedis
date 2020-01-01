@@ -10,6 +10,7 @@ import (
 	"net"
 )
 
+//接收端口
 func init() {
 	flag.StringVar(&address, "bind address", ":6380", "Bind address")
 }
@@ -27,21 +28,27 @@ func main() {
 	// register command handler
 	redis.Register(handler)
 
+	//监听地址
 	// Serve
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		panic(err)
 	}
+	//监听服务
 	redis.Serve(lis)
 }
 
+//创建一个redis的db
 func newRocksDB(dir string) *rocks.DB {
+	//基本选项
 	opts := gorocksdb.NewDefaultOptions()
 	opts.SetCreateIfMissing(true)
+	//打开一个db
 	rdb, err := gorocksdb.OpenDb(opts, dir)
 	if err != nil {
 		panic(err)
 	}
+	//创建一个db
 	return rocks.New(rdb)
 }
 

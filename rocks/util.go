@@ -11,14 +11,19 @@ import (
 // +name,s = "latermoon"
 
 var (
+	//切分
 	SEP = []byte{','}
+	//前缀
 	KEY = []byte{'+'} // Key Prefix
+	//开始
 	SOK = []byte{'['} // Start of Key
+	//结束
 	EOK = []byte{']'} // End of Key
 )
 
 type ElementType byte
 
+//定义五种类型
 const (
 	STRING    ElementType = 's'
 	HASH                  = 'h'
@@ -27,6 +32,7 @@ const (
 	NONE                  = '0'
 )
 
+//返回类型说明
 func (e ElementType) String() string {
 	switch byte(e) {
 	case 's':
@@ -44,6 +50,7 @@ func (e ElementType) String() string {
 
 type IterDirection int
 
+//方向，前0，后1
 const (
 	IterForward IterDirection = iota
 	IterBackward
@@ -55,6 +62,7 @@ const (
 	MAXBYTE byte = math.MaxUint8
 )
 
+//生成key
 func rawKey(key []byte, t ElementType) []byte {
 	return bytes.Join([][]byte{KEY, key, SEP, []byte{byte(t)}}, nil)
 }
@@ -71,6 +79,7 @@ func copyBytes(src []byte) []byte {
 	return dst
 }
 
+//大端
 // 使用二进制存储整形
 func Int64ToBytes(i int64) []byte {
 	buf := make([]byte, 8)
@@ -78,6 +87,7 @@ func Int64ToBytes(i int64) []byte {
 	return buf
 }
 
+//小端
 func BytesToInt64(buf []byte) int64 {
 	return int64(binary.BigEndian.Uint64(buf))
 }

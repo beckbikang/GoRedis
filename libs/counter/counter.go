@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 )
 
+//atomic的计数器类型
 // Atomic Counter, simple enough, easy to Incr/Decr
 // c := Counter(0)
 // c.SetCount(100)
@@ -33,6 +34,7 @@ func (c *Counter) String() string {
 	return fmt.Sprint(c.Count())
 }
 
+//计数器的map
 // Counter Collection
 // factory := NewFactory()
 // factory.Get("set").Incr(1)

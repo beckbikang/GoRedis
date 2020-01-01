@@ -16,15 +16,18 @@ type DB struct {
 	caches *lru.Cache
 }
 
+//新建一个rockdb配置
 func New(rdb *gorocksdb.DB) *DB {
 	db := &DB{rdb: rdb}
 	db.wo = gorocksdb.NewDefaultWriteOptions()
 	db.ro = gorocksdb.NewDefaultReadOptions()
 	db.caches = lru.New(1000)
+	//最大256个
 	db.RawSet([]byte{MAXBYTE}, nil) // for Enumerator seek to last
 	return db
 }
 
+//获取数据，并且cache
 func (d *DB) objFromCache(key []byte, e ElementType) interface{} {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -45,6 +48,7 @@ func (d *DB) objFromCache(key []byte, e ElementType) interface{} {
 	return obj
 }
 
+//获取各类数据
 func (d *DB) Hash(key []byte) *HashElement {
 	return d.objFromCache(key, HASH).(*HashElement)
 }
@@ -57,6 +61,7 @@ func (d *DB) SortedSet(key []byte) *SortedSetElement {
 	return d.objFromCache(key, SORTEDSET).(*SortedSetElement)
 }
 
+//删除
 func (d *DB) Delete(key []byte) error {
 	return nil
 }
@@ -87,22 +92,26 @@ func (d *DB) RawGet(key []byte) ([]byte, error) {
 	return d.rdb.GetBytes(d.ro, key)
 }
 
+//写入数据
 func (d *DB) RawSet(key, value []byte) error {
 	return d.rdb.Put(d.wo, key, value)
 }
-
+//删除数据
 func (d *DB) RawDelete(key []byte) error {
 	return d.rdb.Delete(d.wo, key)
 }
 
+//关闭
 func (d *DB) Close() {
 	d.wo.Destroy()
 	d.ro.Destroy()
 	d.rdb.Close()
 }
 
+//前缀扫描
 // 前缀扫描
-func (d *DB) PrefixEnumerate(prefix []byte, direction IterDirection, fn func(i int, key, value []byte, quit *bool)) {
+func (d *DB) PrefixEnumerate(prefix []byte, direction IterDirection, 
+	fn func(i int, key, value []byte, quit *bool)) {
 	min := prefix
 	max := append(prefix, MAXBYTE)
 	j := -1
@@ -119,7 +128,8 @@ func (d *DB) PrefixEnumerate(prefix []byte, direction IterDirection, fn func(i i
 	return
 }
 
-func (d *DB) RangeEnumerate(min, max []byte, direction IterDirection, fn func(i int, key, value []byte, quit *bool)) {
+func (d *DB) RangeEnumerate(min, max []byte, 
+	direction IterDirection, fn func(i int, key, value []byte, quit *bool)) {
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)
 	defer opts.Destroy()
@@ -129,7 +139,8 @@ func (d *DB) RangeEnumerate(min, max []byte, direction IterDirection, fn func(i 
 }
 
 // 范围扫描
-func (d *DB) Enumerate(iter *gorocksdb.Iterator, min, max []byte, direction IterDirection, fn func(i int, key, value []byte, quit *bool)) {
+func (d *DB) Enumerate(iter *gorocksdb.Iterator, min, max []byte, 
+	direction IterDirection, fn func(i int, key, value []byte, quit *bool)) {
 	found := false
 	if direction == IterBackward {
 		if len(max) == 0 {
